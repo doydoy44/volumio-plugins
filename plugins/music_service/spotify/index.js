@@ -1,58 +1,68 @@
+/*jslint node: true*/
+
 'use strict';
 
-var libQ = require('kew');
-var libNet = require('net');
-var libFast = require('fast.js');
-var fs=require('fs-extra');
-var config = new (require('v-conf'))();
-var exec = require('child_process').exec;
+var libQ          = require('kew');
+var libNet        = require('net');
+var libFast       = require('fast.js');
+var fs            = require('fs-extra');
+var config        = new (require('v-conf'))();
+var exec          = require('child_process').exec;
 var SpotifyWebApi = require('spotify-web-api-node');
-var nodetools = require('nodetools');
+var nodetools     = require('nodetools');
 
 // Define the ControllerSpop class
-module.exports = ControllerSpop;
-function ControllerSpop(context) {
+var ControllerSpop = function (context) {
 	// This fixed variable will let us refer to 'this' object at deeper scopes
 	var self = this;
 
-	this.context = context;
+	this.context       = context;
 	this.commandRouter = this.context.coreCommand;
-	this.logger = this.context.logger;
+	this.logger        = this.context.logger;
 	this.configManager = this.context.configManager;
 
-}
+};
 
+module.exports = ControllerSpop;
 
+ControllerSpop.prototype.onVolumioStart = function () {
+	var self, configFile;
+    
+    self = this;
 
-ControllerSpop.prototype.onVolumioStart = function()
-{
-	var self = this;
-	var configFile=this.commandRouter.pluginManager.getConfigurationFile(this.context,'config.json');
+	configFile = this.commandRouter.pluginManager.getConfigurationFile(this.context, 'config.json');
+    
 	this.config = new (require('v-conf'))();
 	this.config.loadFile(configFile);
 
-	if(self.config.get('bitrate')===true)
-		self.samplerate="320Kbps";
-	else self.samplerate="128Kbps";
+	if (self.config.get('bitrate') === true) {
+		self.samplerate = "320Kbps";
+    } else {
+        self.samplerate = "128Kbps";
+    }
+};
 
-}
-
-ControllerSpop.prototype.getConfigurationFiles = function()
-{
+ControllerSpop.prototype.getConfigurationFiles = function () {
 	return ['config.json'];
-}
+};
 
 ControllerSpop.prototype.addToBrowseSources = function () {
-	var data = {name: 'Spotify', uri: 'spotify',plugin_type:'music_service',plugin_name:'spop'};
+	var data = {
+        name: 'Spotify',
+        uri: 'spotify',
+        plugin_type: 'music_service',
+        plugin_name: 'spop'
+    };
 	this.commandRouter.volumioAddToBrowseSources(data);
 };
 
 // Plugin methods -----------------------------------------------------------------------------
 
-ControllerSpop.prototype.startSpopDaemon = function() {
-	var self = this;
+ControllerSpop.prototype.startSpopDaemon = function () {
+	var self, defer;
+    self = this;
 
-	var defer=libQ.defer();
+	defer = libQ.defer();
 
 	exec("/usr/bin/sudo /bin/systemctl start spop.service", {uid:1000,gid:1000}, function (error, stdout, stderr) {
 		if (error !== null) {
@@ -68,7 +78,7 @@ ControllerSpop.prototype.startSpopDaemon = function() {
 	return defer.promise;
 };
 
-ControllerSpop.prototype.spopDaemonConnect = function(defer) {
+ControllerSpop.prototype.spopDaemonConnect = function (defer) {
 	var self = this;
 
 	// TODO use names from the package.json instead
@@ -344,9 +354,9 @@ ControllerSpop.prototype.handleBrowseUri = function (curUri) {
 
 ControllerSpop.prototype.listPlaylists=function()
 {
-	var self=this;
+	var self = this;
 
-	var defer=libQ.defer();
+	var defer = libQ.defer();
 	var commandDefer=self.sendSpopCommand('ls',[]);
 	commandDefer.then(function(results){
 		var resJson=JSON.parse(results);
