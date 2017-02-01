@@ -64,12 +64,11 @@ ControllerSpop.prototype.startSpopDaemon = function () {
 
 	defer = libQ.defer();
 
-	exec("/usr/bin/sudo /bin/systemctl start spop.service", {uid:1000,gid:1000}, function (error, stdout, stderr) {
+	exec("/usr/bin/sudo /bin/systemctl start spop.service", {uid: 1000, gid: 1000}, function (error, stdout, stderr) {
 		if (error !== null) {
 			self.commandRouter.pushConsoleMessage('The following error occurred while starting SPOPD: ' + error);
 			defer.reject();
-		}
-		else {
+		} else {
 			self.commandRouter.pushConsoleMessage('SpopD Daemon Started');
 			defer.resolve();
 		}
@@ -79,7 +78,9 @@ ControllerSpop.prototype.startSpopDaemon = function () {
 };
 
 ControllerSpop.prototype.spopDaemonConnect = function (defer) {
-	var self = this;
+	var self, nHost, nPort;
+    
+    self = this;
 
 	// TODO use names from the package.json instead
 	self.servicename = 'spop';
@@ -87,44 +88,44 @@ ControllerSpop.prototype.spopDaemonConnect = function (defer) {
 
 
 	// Each core gets its own set of Spop sockets connected
-	var nHost='localhost';
-	var nPort=6602;
+	nHost = 'localhost';
+	nPort = 6602;
+    
 	self.connSpopCommand = libNet.createConnection(nPort, nHost); // Socket to send commands and receive track listings
-	self.connSpopStatus = libNet.createConnection(nPort, nHost, function(){
+	self.connSpopStatus = libNet.createConnection(nPort, nHost, function () {
 		self.addToBrowseSources();
 		defer.resolve();
 	}); // Socket to listen for status changes
 
 	// Start a listener for receiving errors
-	self.connSpopCommand.on('error', function(err) {
+	self.connSpopCommand.on('error', function (err) {
 		self.logger.info('SPOP command error:');
 		self.logger.info(err);
 
-		try
-		{
-			defer.reject();
-		} catch(ecc) {}
+		try {
+            defer.reject();
+		} catch (ecc) {}
 
 	});
-	self.connSpopStatus.on('error', function(err) {
+    
+	self.connSpopStatus.on('error', function (err) {
 		self.logger.info('SPOP status error:');
 		self.logger.info(err);
 
-		try
-		{
+		try {
 			defer.reject();
-		} catch(ecc) {}
+		} catch (ecc) {}
 	});
 
 	// Init some command socket variables
 	self.bSpopCommandGotFirstMessage = false;
-	self.spopCommandReadyDeferred = libQ.defer(); // Make a promise for when the Spop connection is ready to receive events (basically when it emits 'spop 0.0.1').
-	self.spopCommandReady = self.spopCommandReadyDeferred.promise;
-	self.arrayResponseStack = [];
-	self.sResponseBuffer = '';
+	self.spopCommandReadyDeferred    = libQ.defer(); // Make a promise for when the Spop connection is ready to receive events (basically when it emits 'spop 0.0.1').
+	self.spopCommandReady            = self.spopCommandReadyDeferred.promise;
+	self.arrayResponseStack          = [];
+	self.sResponseBuffer             = '';
 
 	// Start a listener for command socket messages (command responses)
-	self.connSpopCommand.on('data', function(data) {
+	self.connSpopCommand.on('data', function (data) {
 		self.sResponseBuffer = self.sResponseBuffer.concat(data.toString());
 
 		//self.commandRouter.logger.info("DATA: "+self.sResponseBuffer);
@@ -145,15 +146,15 @@ ControllerSpop.prototype.spopDaemonConnect = function (defer) {
 				// Else this is a command response
 			} else {
 				try {
-					self.commandRouter.logger.info("BEFORE: SPOP HAS "+self.arrayResponseStack.length+" PROMISE IN STACK");
+					self.commandRouter.logger.info("BEFORE: SPOP HAS " + self.arrayResponseStack.length + " PROMISE IN STACK");
 
-					if(self.arrayResponseStack!==undefined && self.arrayResponseStack.length>0)
+					if (self.arrayResponseStack !== undefined && self.arrayResponseStack.length > 0) {
 						self.arrayResponseStack.shift().resolve(self.sResponseBuffer);
+                    }
+					self.commandRouter.logger.info("AFTER: SPOP HAS " + self.arrayResponseStack.length + " PROMISE IN STACK");
 
-					self.commandRouter.logger.info("AFTER: SPOP HAS "+self.arrayResponseStack.length+" PROMISE IN STACK");
-
-				} catch (error) {
-					self.pushError(error);
+				} catch (error2) {
+					self.pushError(error2);
 				}
 			}
 
@@ -167,7 +168,9 @@ ControllerSpop.prototype.spopDaemonConnect = function (defer) {
 	self.sStatusBuffer = '';
 
 	// Start a listener for status socket messages
-	self.connSpopStatus.on('data', function(data) {
+	self.connSpopStatus.on('data', function (data) {
+        var timeStart, sStatus;
+        
 		self.sStatusBuffer = self.sStatusBuffer.concat(data.toString());
 
 		// If the last character in the data chunk is a newline, this is the end of the status update
@@ -180,8 +183,8 @@ ControllerSpop.prototype.spopDaemonConnect = function (defer) {
 				self.bSpopStatusGotFirstMessage = true;
 				// Else this is a state update announcement
 			} else {
-				var timeStart = Date.now();
-				var sStatus = self.sStatusBuffer;
+				timeStart = Date.now();
+				sStatus = self.sStatusBuffer;
 
 				self.commandRouter.logger.info("STATUS");
 
@@ -191,12 +194,12 @@ ControllerSpop.prototype.spopDaemonConnect = function (defer) {
 				//.then(function(){
 				// return self.getState.call(self);
 				// })
-					.then(function() {
+					.then(function () {
 						return self.parseState.call(self, sStatus);
 					})
 					.then(libFast.bind(self.pushState, self))
 					.fail(libFast.bind(self.pushError, self))
-					.done(function() {
+					.done(function () {
 						return self.logDone(timeStart);
 					});
 			}
@@ -223,34 +226,34 @@ ControllerSpop.prototype.spopDaemonConnect = function (defer) {
 };
 
 
-ControllerSpop.prototype.onStop = function() {
+ControllerSpop.prototype.onStop = function () {
 	var self = this;
 
 	self.logger.info("Killing SpopD daemon");
 	exec("/usr/bin/sudo /usr/bin/killall spopd", function (error, stdout, stderr) {
-		if(error){
-			self.logger.info('Cannot kill spop Daemon')
+		if (error) {
+			self.logger.info('Cannot kill spop Daemon');
 		}
 	});
 
 	return libQ.resolve();
 };
 
-ControllerSpop.prototype.onStart = function() {
-	var self = this;
+ControllerSpop.prototype.onStart = function () {
+	var self, defer;
+    
+    self = this;
 
-	var defer=libQ.defer();
+	defer = libQ.defer();
 
 	self.startSpopDaemon()
-		.then(function(e)
-		{
+		.then(function (e) {
 			setTimeout(function () {
 				self.logger.info("Connecting to daemon");
 				self.spopDaemonConnect(defer);
 			}, 5000);
 		})
-		.fail(function(e)
-		{
+		.fail(function (e) {
 			defer.reject(new Error());
 		});
 	this.commandRouter.sharedVars.registerCallback('alsa.outputdevice', this.rebuildSPOPDAndRestartDaemon.bind(this));
@@ -259,13 +262,14 @@ ControllerSpop.prototype.onStart = function() {
 };
 
 ControllerSpop.prototype.handleBrowseUri = function (curUri) {
-	var self = this;
-
-	//self.commandRouter.logger.info(curUri);
-	var response;
+	var self, response;
+        
+    self = this;
+    
+	//self.commandRouter.logger.info(curUri);	
 
 	if (curUri.startsWith('spotify')) {
-		if (curUri == 'spotify') {
+		if (curUri === 'spotify') {
 			response = libQ.resolve({
 				navigation: {
 					lists: [
@@ -318,33 +322,25 @@ ControllerSpop.prototype.handleBrowseUri = function (curUri) {
 					}
 				}
 			});
-		}
-		else if (curUri.startsWith('spotify/playlists')) {
-			if (curUri == 'spotify/playlists')
+		} else if (curUri.startsWith('spotify/playlists')) {
+			if (curUri === 'spotify/playlists') {
 				response = self.listPlaylists();
-			else {
+            } else {
 				response = self.listPlaylist(curUri);
 			}
-		}
-		else if (curUri.startsWith('spotify/featuredplaylists')) {
+		} else if (curUri.startsWith('spotify/featuredplaylists')) {
 			response = self.featuredPlaylists(curUri);
-		}
-		else if (curUri.startsWith('spotify:user:')) {
+		} else if (curUri.startsWith('spotify:user:')) {
 			response = self.listWebPlaylist(curUri);
-		}
-		else if (curUri.startsWith('spotify/new')) {
+		} else if (curUri.startsWith('spotify/new')) {
 			response = self.listWebNew(curUri);
-		}
-		else if (curUri.startsWith('spotify/categories')) {
+		} else if (curUri.startsWith('spotify/categories')) {
 			response = self.listWebCategories(curUri);
-		}
-		else if (curUri.startsWith('spotify:album')) {
+		} else if (curUri.startsWith('spotify:album')) {
 			response = self.listWebAlbum(curUri);
-		}
-		else if (curUri.startsWith('spotify/category')) {
+		} else if (curUri.startsWith('spotify/category')) {
 			response = self.listWebCategory(curUri);
-		}
-		else if (curUri.startsWith('spotify:artist:')) {
+		} else if (curUri.startsWith('spotify:artist:')) {
 			response = self.listWebArtist(curUri);
 		}
 	}
