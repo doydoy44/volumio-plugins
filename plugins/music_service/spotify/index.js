@@ -348,195 +348,201 @@ ControllerSpop.prototype.handleBrowseUri = function (curUri) {
 	return response;
 };
 
-ControllerSpop.prototype.listPlaylists=function()
-{
-	var self = this;
+ControllerSpop.prototype.listPlaylists = function () {
+	var self, defer, commandDefer;
+    
+    self = this;
 
-	var defer = libQ.defer();
-	var commandDefer=self.sendSpopCommand('ls',[]);
-	commandDefer.then(function(results){
-		var resJson=JSON.parse(results);
-		//   self.logger.info(JSON.stringify(resJson));
+	defer = libQ.defer();
+	commandDefer = self.sendSpopCommand('ls', []);
+    
+	commandDefer
+        .then(function (results) {
+            var resJson, response, cpti, cptj;
 
-		//	self.commandRouter.logger.info(resJson);
-		var response={
-			navigation: {
-				"prev": {
-					uri: 'spotify'
-				},
-				"lists": [
-					{
-						"availableListViews": [
-							"list"
-						],
-						"items": [
+            resJson = JSON.parse(results);
+            //   self.logger.info(JSON.stringify(resJson));
 
-						]
-					}
-				]
-			}
-		};
+            //	self.commandRouter.logger.info(resJson);
+            response = {
+                navigation: {
+                    "prev": {
+                        uri: 'spotify'
+                    },
+                    "lists": [
+                        {
+                            "availableListViews": [
+                                "list"
+                            ],
+                            "items": [
 
-		for(var i in resJson.playlists)
-		{
-			if(resJson.playlists[i].hasOwnProperty('name') && resJson.playlists[i].name !== '')
-			{
-				if(resJson.playlists[i].type == 'playlist')
-				{
-					response.navigation.lists[0].items.push({
-						service: 'spop',
-						type: 'folder',
-						title: resJson.playlists[i].name,
-						icon: 'fa fa-list-ol',
-						uri: 'spotify/playlists/'+resJson.playlists[i].index
-					});
-				}
-				else if(resJson.playlists[i].type == 'folder')
-				{
-					for(var j in resJson.playlists[i].playlists)
-					{
-						response.navigation.lists[0].items.push({
-							service: 'spop',
-							type: 'folder',
-							title: resJson.playlists[i].playlists[j].name,
-							icon: 'fa fa-list-ol',
-							uri: 'spotify/playlists/'+resJson.playlists[i].playlists[j].index
-						});
-					}
-				}
-			}
-		}
+                            ]
+                        }
+                    ]
+                }
+            };
 
-		defer.resolve(response);
+            for (cpti in resJson.playlists) {
 
-	})
-		.fail(function()
-		{
+                if (resJson.playlists[cpti].hasOwnProperty('name') && resJson.playlists[cpti].name !== '') {
+
+                    if (resJson.playlists[cpti].type === 'playlist') {
+                        response.navigation.lists[0].items.push({
+                            service: 'spop',
+                            type:    'folder',
+                            title:   resJson.playlists[cpti].name,
+                            icon:    'fa fa-list-ol',
+                            uri:     'spotify/playlists/' + resJson.playlists[cpti].index
+                        });
+                    } else if (resJson.playlists[cpti].type === 'folder') {
+
+                        for (cptj in resJson.playlists[cpti].playlists) {
+
+                            response.navigation.lists[0].items.push({
+                                service: 'spop',
+                                type:    'folder',
+                                title:   resJson.playlists[cpti].playlists[cptj].name,
+                                icon:    'fa fa-list-ol',
+                                uri:     'spotify/playlists/' + resJson.playlists[cpti].playlists[cptj].index
+                            });
+                        }
+                    }
+                }
+            }
+
+            defer.resolve(response);
+
+        })
+		.fail(function () {
 			defer.fail(new Error('An error occurred while listing playlists'));
 		});
 
 	return defer.promise;
 };
 
-ControllerSpop.prototype.listPlaylist=function(curUri)
-{
-	var self=this;
+ControllerSpop.prototype.listPlaylist = function (curUri) {
+	var self, uriSplitted, defer, commandDefer;
+    
+    self = this;
 
-	var uriSplitted=curUri.split('/');
+	uriSplitted = curUri.split('/');
 
-	var defer=libQ.defer();
-	var commandDefer=self.sendSpopCommand('ls',[uriSplitted[2]]);
-	commandDefer.then(function(results){
-		var resJson=JSON.parse(results);
+	defer = libQ.defer();
+    
+	commandDefer = self.sendSpopCommand('ls', [uriSplitted[2]]);
+    
+	commandDefer
+        .then(function (results) {
+            var resJson, response, i;
 
-		var response={
-			navigation: {
-				prev: {
-					uri: 'spotify/playlists'
-				},
-				"lists": [
-					{
-						"availableListViews": [
-							"list"
-						],
-						"items": [
+            resJson = JSON.parse(results);
 
-						]
-					}
-				]
-			}
-		};
+            response = {
+                navigation: {
+                    prev: {
+                        uri: 'spotify/playlists'
+                    },
+                    "lists": [
+                        {
+                            "availableListViews": [
+                                "list"
+                            ],
+                            "items": [
 
-		for(var i in resJson.tracks)
-		{
-			response.navigation.lists[0].items.push({
-				service: 'spop',
-				type: 'song',
-				title: resJson.tracks[i].title,
-				artist:resJson.tracks[i].artist,
-				album: resJson.tracks[i].album,
-				icon: 'fa fa-spotify',
-				uri: resJson.tracks[i].uri
-			});
-		}
+                            ]
+                        }
+                    ]
+                }
+            };
 
-		defer.resolve(response);
-	})
-		.fail(function()
-		{
+            for (i in resJson.tracks) {
+                response.navigation.lists[0].items.push({
+                    service: 'spop',
+                    type:    'song',
+                    title:   resJson.tracks[i].title,
+                    artist:  resJson.tracks[i].artist,
+                    album:   resJson.tracks[i].album,
+                    icon:    'fa fa-spotify',
+                    uri:     resJson.tracks[i].uri
+                });
+            }
+
+            defer.resolve(response);
+        })
+		.fail(function () {
 			defer.fail(new Error('An error occurred while listing playlists'));
 		});
 
 	return defer.promise;
 };
 
-ControllerSpop.prototype.spotifyApiConnect=function()
-{
-	var self=this;
+ControllerSpop.prototype.spotifyApiConnect = function () {
+	var self, defer, d;
+        
+    self = this;
 
-	var defer=libQ.defer();
+	defer = libQ.defer();
 
-	var d = new Date();
+	d = new Date();
 
-	self.spotifyApi= new SpotifyWebApi({
-		clientId : '7160366cc0944645bb1f32a7b81dd1ee',
+	self.spotifyApi = new SpotifyWebApi({
+		clientId :     '7160366cc0944645bb1f32a7b81dd1ee',
 		clientSecret : 'ab4691ab353b4da6a35b151eb73dfd59',
-		redirectUri : 'http://localhost'
+		redirectUri :  'http://localhost'
 	});
 
 	// Retrieve an access token
 	self.spotifyClientCredentialsGrant()
-		.then(function(data) {
-				self.logger.info('Spotify credentials grant success');
-				defer.resolve();
-			}, function(err) {
-				self.logger.info('Spotify credentials grant failed with ' + err);
-			}
-		);
+		.then(function (data) {
+            self.logger.info('Spotify credentials grant success');
+            defer.resolve();
+        }, function (err) {
+            self.logger.info('Spotify credentials grant failed with ' + err);
+        });
 
 	return defer.promise;
-}
+};
 
-ControllerSpop.prototype.spotifyClientCredentialsGrant=function()
-{
-	var self=this;
+ControllerSpop.prototype.spotifyClientCredentialsGrant = function () {
+	var self, defer, d, now;
+    
+    self = this;
 
-	var defer=libQ.defer();
+	defer = libQ.defer();
 
-	var d = new Date();
+	d = new Date();
 
-	var now = d.getTime();
+	now = d.getTime();
 
 	// Retrieve an access token
 	self.spotifyApi.clientCredentialsGrant()
-		.then(function(data) {
-			self.spotifyApi.setAccessToken(data.body['access_token']);
-			self.spotifyAccessToken = data.body['access_token'];
-			self.spotifyAccessTokenExpiration = data.body['expires_in'] * 1000 + now;
+		.then(function (data) {
+			self.spotifyApi.setAccessToken(data.body.access_token);
+			self.spotifyAccessToken = data.body.access_token;
+			self.spotifyAccessTokenExpiration = data.body.expires_in * 1000 + now;
 			self.logger.info('Spotify access token expires at ' + self.spotifyAccessTokenExpiration);
-			self.logger.info('Spotify access token is ' + data.body['access_token']);
+			self.logger.info('Spotify access token is ' + data.body.access_token);
 			defer.resolve();
-		}, function(err) {
+		}, function (err) {
 			self.logger.info('Spotify credentials grant failed with ' + err);
 		});
 
 	return defer.promise;
-}
+};
 
-ControllerSpop.prototype.spotifyCheckAccessToken=function()
-{
-	var self=this;
+ControllerSpop.prototype.spotifyCheckAccessToken = function () {
+	var self, defer, d, now;
+    self = this;
 
-	var defer=libQ.defer();
+	defer = libQ.defer();
 
-	var d = new Date();
+	d = new Date();
 
-	var now = d.getTime();
+	now = d.getTime();
 
-	if (self.spotifyAccessTokenExpiration < now)
-	{
+	if (self.spotifyAccessTokenExpiration < now) {
 		self.spotifyClientCredentialsGrant()
-			.then(function(data) {
+			.then(function (data) {
 				self.logger.info('Refreshed Spotify access token');
 			});
 	}
@@ -547,67 +553,70 @@ ControllerSpop.prototype.spotifyCheckAccessToken=function()
 
 };
 
-ControllerSpop.prototype.featuredPlaylists=function(curUri)
-{
+ControllerSpop.prototype.featuredPlaylists = function (curUri) {
+    var self, defer;
+	
+    self = this;
 
-	var self=this;
-
-	var defer=libQ.defer();
+	defer = libQ.defer();
 
 	self.spotifyCheckAccessToken()
-		.then(function(data) {
-				var spotifyDefer = self.spotifyApi.getFeaturedPlaylists();
-				spotifyDefer.then(function (results) {
-					var response = {
-						navigation: {
-							prev: {
-								uri: 'spotify'
-							},
-							"lists": [
-								{
-									"availableListViews": [
-										"list",
-										"grid"
-									],
-									"items": [
+		.then(function (data) {
+            var spotifyDefer = self.spotifyApi.getFeaturedPlaylists();
+            spotifyDefer.then(function (results) {
+                var i, response, playlist;
+                response = {
+                    navigation: {
+                        prev: {
+                            uri: 'spotify'
+                        },
+                        "lists": [
+                            {
+                                "availableListViews": [
+                                    "list",
+                                    "grid"
+                                ],
+                                "items": [
 
-									]
-								}
-							]
-						}
-					};
+                                ]
+                            }
+                        ]
+                    }
+                };
 
-					for (var i in results.body.playlists.items) {
-						var playlist = results.body.playlists.items[i];
-						response.navigation.lists[0].items.push({
-							service: 'spop',
-							type: 'playlist',
-							title: playlist.name,
-							albumart: playlist.images[0].url,
-							uri: playlist.uri
-						});
-					}
-					defer.resolve(response);
-				}, function (err) {
-					self.logger.info('An error occurred while listing Spotify featured playlists ' + err);
-				});
-			}
-		);
+                for (i in results.body.playlists.items) {
+                    playlist = results.body.playlists.items[i];
+                    response.navigation.lists[0].items.push({
+                        service: 'spop',
+                        type: 'playlist',
+                        title: playlist.name,
+                        albumart: playlist.images[0].url,
+                        uri: playlist.uri
+                    });
+                }
+                defer.resolve(response);
+            }, function (err) {
+                self.logger.info('An error occurred while listing Spotify featured playlists ' + err);
+            });
+        });
 
 	return defer.promise;
 };
 
-ControllerSpop.prototype.listWebPlaylist=function(curUri)
-{
-	var self=this;
+ControllerSpop.prototype.listWebPlaylist = function (curUri) {
+    var self, defer, uriSplitted, spotifyDefer;
+	
+    self = this;
 
-	var defer=libQ.defer();
+	defer = libQ.defer();
 
-	var uriSplitted=curUri.split(':');
+	uriSplitted = curUri.split(':');
 
-	var spotifyDefer = self.getPlaylistTracks(uriSplitted[2], uriSplitted[4]);
+	spotifyDefer = self.getPlaylistTracks(uriSplitted[2], uriSplitted[4]);
+    
 	spotifyDefer.then(function (results) {
-		var response = {
+		var i, response;
+        response = {
 			navigation: {
 				prev: {
 					uri: 'spotify'
@@ -625,7 +634,7 @@ ControllerSpop.prototype.listWebPlaylist=function(curUri)
 				]
 			}
 		};
-		for (var i in results) {
+		for (i in results) {
 			response.navigation.lists[0].items.push(results[i]);
 		}
 		defer.resolve(response);
@@ -634,19 +643,20 @@ ControllerSpop.prototype.listWebPlaylist=function(curUri)
 	return defer.promise;
 };
 
-ControllerSpop.prototype.listWebNew=function(curUri)
-{
+ControllerSpop.prototype.listWebNew = function (curUri) {
+    var self, defer;
+	
+    self = this;
 
-	var self=this;
-
-	var defer=libQ.defer();
+	defer = libQ.defer();
 
 	self.spotifyCheckAccessToken()
-		.then(function(data) {
+		.then(function (data) {
 			var spotifyDefer = self.spotifyApi.getNewReleases({limit : 50});
 			spotifyDefer.then(function (results) {
 
-				var response = {
+				var i, response, album;
+                response = {
 					navigation: {
 						prev: {
 							uri: 'spotify'
@@ -665,8 +675,8 @@ ControllerSpop.prototype.listWebNew=function(curUri)
 					}
 				};
 
-				for (var i in results.body.albums.items) {
-					var album = results.body.albums.items[i];
+				for (i in results.body.albums.items) {
+					album = results.body.albums.items[i];
 					response.navigation.lists[0].items.push({
 						service: 'spop',
 						type: 'folder',
@@ -684,8 +694,7 @@ ControllerSpop.prototype.listWebNew=function(curUri)
 	return defer.promise;
 };
 
-ControllerSpop.prototype.listWebAlbum=function(curUri)
-{
+ControllerSpop.prototype.listWebAlbum = function (curUri) {
 
 	var self=this;
 
