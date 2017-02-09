@@ -695,16 +695,18 @@ ControllerSpop.prototype.listWebNew = function (curUri) {
 };
 
 ControllerSpop.prototype.listWebAlbum = function (curUri) {
+    var self, defer, uriSplitted, spotifyDefer;
 
-	var self=this;
+	self = this;
 
-	var defer=libQ.defer();
+	defer = libQ.defer();
 
-	var uriSplitted=curUri.split(':');
+	uriSplitted = curUri.split(':');
 
-	var spotifyDefer = self.getAlbumTracks(uriSplitted[2], {limit : 50});
+	spotifyDefer = self.getAlbumTracks(uriSplitted[2], {limit : 50});
 	spotifyDefer.then(function (results) {
-		var response = {
+		var response, i;
+        response = {
 			navigation: {
 				prev: {
 					uri: 'spotify'
@@ -721,7 +723,7 @@ ControllerSpop.prototype.listWebAlbum = function (curUri) {
 				]
 			}
 		};
-		for (var i in results) {
+		for (i in results) {
 			response.navigation.lists[0].items.push(results[i]);
 		}
 		defer.resolve(response);
@@ -732,19 +734,19 @@ ControllerSpop.prototype.listWebAlbum = function (curUri) {
 
 
 
-ControllerSpop.prototype.listWebCategories=function(curUri)
-{
+ControllerSpop.prototype.listWebCategories = function (curUri) {
+	var self, defer;
 
-	var self=this;
+    self = this;
 
-	var defer=libQ.defer();
+	defer = libQ.defer();
 
 	self.spotifyCheckAccessToken()
-		.then(function(data) {
+		.then(function (data) {
 			var spotifyDefer = self.spotifyApi.getCategories({limit : 50});
 			spotifyDefer.then(function (results) {
-
-				var response = {
+                var response, i;
+				response = {
 					navigation: {
 						prev: {
 							uri: 'spotify'
@@ -763,7 +765,7 @@ ControllerSpop.prototype.listWebCategories=function(curUri)
 					}
 				};
 
-				for (var i in results.body.categories.items) {
+				for (i in results.body.categories.items) {
 					response.navigation.lists[0].items.push({
 						service: 'spop',
 						type: 'spotify-category',
@@ -781,21 +783,21 @@ ControllerSpop.prototype.listWebCategories=function(curUri)
 	return defer.promise;
 };
 
-ControllerSpop.prototype.listWebCategory=function(curUri)
-{
+ControllerSpop.prototype.listWebCategory = function (curUri) {
+    var self, defer, uriSplitted;
 
-	var self=this;
+	self = this;
 
-	var defer=libQ.defer();
+	defer = libQ.defer();
 
-	var uriSplitted=curUri.split('/');
+	uriSplitted = curUri.split('/');
 
 	self.spotifyCheckAccessToken()
-		.then(function(data) {
+		.then(function (data) {
 			var spotifyDefer = self.spotifyApi.getPlaylistsForCategory(uriSplitted[2], {limit : 50});
 			spotifyDefer.then(function (results) {
-
-				var response = {
+                var response, i, playlist;
+				response = {
 					navigation: {
 						prev: {
 							uri: 'spotify/categories'
@@ -814,8 +816,8 @@ ControllerSpop.prototype.listWebCategory=function(curUri)
 					}
 				};
 
-				for (var i in results.body.playlists.items) {
-					var playlist = results.body.playlists.items[i];
+				for (i in results.body.playlists.items) {
+					playlist = results.body.playlists.items[i];
 					response.navigation.lists[0].items.push({
 						service: 'spop',
 						type: 'folder',
