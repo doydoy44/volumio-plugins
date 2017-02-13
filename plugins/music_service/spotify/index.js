@@ -1429,10 +1429,7 @@ ControllerSpop.prototype.rebuildTracklistFromSpopPlaylists = function (objInput,
                             'uri': curTracklist.tracks[j].uri,
                             'browsepath': arrayNewPath,
                             'album': curTracklist.tracks[j].album,
-                            'artists': libFast.map(curTracklist.tracks[j].artist.split(','), function (sArtist) {
-                                // TODO - parse other options in artist string, such as "feat."
-                                return sArtist.trim();
-                            }),
+                            'artists': libFast.map(curTracklist.tracks[j].artist.split(','), self.parseOtherArtistOptions),
                             'performers': [],
                             'genres': [],
                             'tracknumber': 0,
@@ -1445,6 +1442,11 @@ ControllerSpop.prototype.rebuildTracklistFromSpopPlaylists = function (objInput,
     });
 
     return promisedActions;
+};
+
+ControllerSpop.prototype.parseOtherArtistOptions = function (sArtist) {
+    // TODO - parse other options in artist string, such as "feat."
+    return sArtist.trim();
 };
 
 // TODO delete below function - not used
