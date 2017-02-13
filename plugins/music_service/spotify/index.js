@@ -1,4 +1,5 @@
 /*jslint node: true*/
+/*jslint plusplus: true*/
 
 'use strict';
 
