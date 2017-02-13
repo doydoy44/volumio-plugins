@@ -1103,15 +1103,19 @@ ControllerSpop.prototype.onUninstall = function () {
 };
 
 ControllerSpop.prototype.getUIConfig = function () {
-    var self, defer, lang_code;
+    var self, defer, lang_code, dirname;
+
+    /*jslint nomen: true*/
+    dirname = __dirname;
+    /*jslint nomen: false*/
 
 	self      = this;
 	defer     = libQ.defer();
 	lang_code = this.commandRouter.sharedVars.get('language_code');
 
-	self.commandRouter.i18nJson(__dirname + '/i18n/strings_' + lang_code + '.json',
-                                __dirname + '/i18n/strings_en.json',
-                                __dirname + '/UIConfig.json')
+	self.commandRouter.i18nJson(dirname + '/i18n/strings_' + lang_code + '.json',
+                                dirname + '/i18n/strings_en.json',
+                                dirname + '/UIConfig.json')
 		.then(function (uiconf) {
 			uiconf.sections[0].content[0].value = self.config.get('username');
 			uiconf.sections[0].content[1].value = self.config.get('password');
