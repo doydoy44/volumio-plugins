@@ -928,6 +928,7 @@ ControllerSpop.prototype.getArtistTracks = function (id) {
 
 	spotifyDefer
         .then(function (data) {
+            var i;
             for (i in data) {
                 list.push(data[i]);
             }
@@ -1271,15 +1272,15 @@ ControllerSpop.prototype.parseState = function (sState) {
 	objState = JSON.parse(sState);
 
 
-	if ('position' in objState) {
+    if (typeof objState.position !== "undefined") {
 		nSeek = objState.position * 1000;
 	}
 
-	if ('duration' in objState) {
+    if (typeof objState.duration !== "undefined") {
 		nDuration = objState.duration;
 	}
 
-	if ('status' in objState) {
+    if (typeof objState.status !== "undefined") {
 		if (objState.status === 'playing') {
 			sStatus = 'play';
 		} else if (objState.status === 'paused') {
@@ -1289,7 +1290,7 @@ ControllerSpop.prototype.parseState = function (sState) {
 		}
 	}
 
-	if ('current_track' in objState) {
+    if (typeof objState.current_track !== "undefined") {
 		nPosition = objState.current_track - 1;
 	}
 
@@ -1333,7 +1334,8 @@ ControllerSpop.prototype.rebuildTracklistFromSpopPlaylists = function (objInput,
 
 	self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'ControllerSpop::rebuildTracklistFromSpopPlaylists');
 
-	if (!('playlists' in objInput)) {
+
+    if (typeof objInput.playlists === "undefined") {
 		throw new Error('Error building Spop tracklist - no playlists found.');
 	}
 
@@ -1377,7 +1379,7 @@ ControllerSpop.prototype.rebuildTracklistFromSpopPlaylists = function (objInput,
 
                     nTracks = 0;
 
-					if (!('tracks' in curTracklist)) {
+                    if (typeof curTracklist.tracks === "undefined") {
 						return;
 					}
 
